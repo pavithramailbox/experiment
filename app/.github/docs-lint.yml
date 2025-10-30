@@ -1,0 +1,57 @@
+
+# .github/workflows/docs-lint.yml
+name: Lint Documentation
+
+on:
+  pull_request:
+    paths:
+      - '**.md'
+      - 'docs/**'
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: Lint Markdown (Microsoft Style)
+        run: |
+          python ms_style_linter.py \
+            --severity warning \
+            --json lint-report.json \
+            docs/**/*.md
+      
+      - name: Upload Report
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: lint-report
+          path: lint-report.json
+      
+      - name: Comment PR
+        if: failure()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const report = JSON.parse(fs.readFileSync('lint-report.json'));
+            const comment = `## 📝 Documentation Lint Report
+            
+            **Summary:**
+            - ❌ Errors: ${report.summary.errors}
+            - ⚠️ Warnings: ${report.summary.warnings}
+            - ℹ️ Info: ${report.summary.info}
+            
+            Please review the documentation for Microsoft style guide compliance.`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });

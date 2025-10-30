@@ -20,7 +20,7 @@ jobs:
       
       - name: Lint Markdown (Microsoft Style)
         run: |
-          python ms_style_linter.py \
+          python mmos_linter.py \
             --severity warning \
             --json lint-report.json \
             docs/**/*.md
